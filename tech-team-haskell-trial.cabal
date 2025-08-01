@@ -1,0 +1,42 @@
+cabal-version:   3.0
+name:            tech-team-haskell-trial
+version:         0.1.0.0
+license:
+author:          Jack Kelly
+maintainer:      haskell@bellroy.com
+copyright:       Copyright (C) 2025 Bellroy Pty Ltd
+category:        Demo
+build-type:      Simple
+extra-doc-files: CHANGELOG.md
+
+-- extra-source-files:
+
+common warnings
+  ghc-options: -Wall
+
+library
+  import:           warnings
+  exposed-modules:  MyLib
+  build-depends:    base ^>=4.19.2.0
+  hs-source-dirs:   src
+  default-language: GHC2021
+
+executable tech-team-haskell-trial
+  import:           warnings
+  main-is:          Main.hs
+  build-depends:
+    , base                     ^>=4.19.2.0
+    , tech-team-haskell-trial
+
+  hs-source-dirs:   app
+  default-language: GHC2021
+
+test-suite tech-team-haskell-trial-test
+  import:           warnings
+  default-language: GHC2021
+  type:             exitcode-stdio-1.0
+  hs-source-dirs:   test
+  main-is:          Main.hs
+  build-depends:
+    , base                     ^>=4.19.2.0
+    , tech-team-haskell-trial
