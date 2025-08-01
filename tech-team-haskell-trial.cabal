@@ -25,9 +25,9 @@ library api
   import:           warnings
   exposed-modules:  Api
   build-depends:
-    , aeson
+    , aeson    ^>=2.2.3
     , base     ^>=4.19.2.0
-    , servant
+    , servant  ^>=0.20.2
 
   hs-source-dirs:   src/api
   default-language: GHC2021
