@@ -14,21 +14,22 @@ extra-doc-files: CHANGELOG.md
 common warnings
   ghc-options: -Wall
 
+executable server
+  import:           warnings
+  main-is:          Main.hs
+  build-depends:    base ^>=4.19.2.0
+  hs-source-dirs:   app/server
+  default-language: GHC2021
+
 library api
   import:           warnings
   exposed-modules:  Api
-  build-depends:    base ^>=4.19.2.0
-  hs-source-dirs:   src/api
-  default-language: GHC2021
-
-executable tech-team-haskell-trial
-  import:           warnings
-  main-is:          Main.hs
   build-depends:
-    , base                     ^>=4.19.2.0
-    , tech-team-haskell-trial
+    , aeson
+    , base     ^>=4.19.2.0
+    , servant
 
-  hs-source-dirs:   app
+  hs-source-dirs:   src/api
   default-language: GHC2021
 
 test-suite tech-team-haskell-trial-test
@@ -37,6 +38,4 @@ test-suite tech-team-haskell-trial-test
   type:             exitcode-stdio-1.0
   hs-source-dirs:   test
   main-is:          Main.hs
-  build-depends:
-    , base                     ^>=4.19.2.0
-    , tech-team-haskell-trial
+  build-depends:    base ^>=4.19.2.0
