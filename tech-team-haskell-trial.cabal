@@ -14,11 +14,11 @@ extra-doc-files: CHANGELOG.md
 common warnings
   ghc-options: -Wall
 
-library
+library api
   import:           warnings
-  exposed-modules:  MyLib
+  exposed-modules:  Api
   build-depends:    base ^>=4.19.2.0
-  hs-source-dirs:   src
+  hs-source-dirs:   src/api
   default-language: GHC2021
 
 executable tech-team-haskell-trial
