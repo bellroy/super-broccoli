@@ -30,7 +30,10 @@
         { config, pkgs, ... }:
         {
           haskellProjects.default = {
-            devShell.mkShellArgs.shellHook = config.pre-commit.installationScript;
+            devShell.mkShellArgs = {
+              nativeBuildInputs = [ pkgs.curl ];
+              shellHook = config.pre-commit.installationScript;
+            };
           };
 
           pre-commit.settings.hooks = {

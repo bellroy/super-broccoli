@@ -17,7 +17,14 @@ common warnings
 executable server
   import:           warnings
   main-is:          Main.hs
-  build-depends:    base ^>=4.19.2.0
+  build-depends:
+    , api
+    , base            ^>=4.19.2.0
+    , mtl             ^>=2.3.1
+    , servant-server
+    , sqlite-simple
+    , warp
+
   hs-source-dirs:   app/server
   default-language: GHC2021
 
