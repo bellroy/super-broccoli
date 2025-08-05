@@ -31,7 +31,10 @@
         {
           haskellProjects.default = {
             devShell.mkShellArgs = {
-              nativeBuildInputs = [ pkgs.curl ];
+              nativeBuildInputs = [
+                pkgs.curl
+                pkgs.jq
+              ];
               shellHook = config.pre-commit.installationScript;
             };
           };
@@ -45,6 +48,7 @@
               enable = true;
               excludes = [ "flake.lock" ];
             };
+            shellcheck.enable = true;
           };
         };
     };

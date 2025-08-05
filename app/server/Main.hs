@@ -108,7 +108,7 @@ initializeDatabase conn = do
 
 main :: IO ()
 main = do
-  putStrLn "Starting shopping cart server on port 8080..."
+  putStrLn "Starting shopping cart server..."
   conn <- open ":memory:"
   initializeDatabase conn
   let initialState = ServerState {carts = []}
