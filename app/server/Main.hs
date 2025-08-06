@@ -12,7 +12,6 @@ import Api
     Product (..),
     ShoppingCartRoutes (..),
   )
-import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (ReaderT, ask, runReaderT)
 import Control.Monad.State (StateT, evalStateT, gets, modify)
 import Database.SQLite.Simple (Connection, executeMany, execute_, open)
