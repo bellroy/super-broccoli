@@ -34,6 +34,7 @@
               nativeBuildInputs = [
                 pkgs.curl
                 pkgs.jq
+                pkgs.sqlite
               ];
               shellHook = config.pre-commit.installationScript;
             };

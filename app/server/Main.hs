@@ -1,6 +1,8 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 
 module Main where
 
@@ -12,26 +14,42 @@ import Api
     Product (..),
     ShoppingCartRoutes (..),
   )
+import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (ReaderT, ask, runReaderT)
-import Control.Monad.State (StateT, evalStateT, gets, modify)
-import Database.SQLite.Simple (Connection, executeMany, execute_, open)
+import Database.SQLite.Simple (Connection, Only (..), execute, executeMany, execute_, open, query, query_)
 import Database.SQLite.Simple.FromRow (FromRow (..), field)
 import Database.SQLite.Simple.ToRow (ToRow (..))
+import GHC.Generics (Generic)
 import Network.Wai.Handler.Warp (runEnv)
-import Servant (Handler, err404, throwError)
+import Servant (Handler, err404, err500, throwError)
 import Servant.Server.Generic (AsServerT, genericServeT)
-
-newtype ServerState = ServerState
-  { carts :: [(Int, Cart)]
-  }
-  deriving (Show)
 
 instance FromRow Product where
   fromRow = Product <$> field <*> field <*> field
 
 instance ToRow Product
 
-type AppM = ReaderT Connection (StateT ServerState Handler)
+newtype DBCart = DBCart
+  {id :: Int}
+  deriving (Generic, Show, FromRow, ToRow)
+
+data DBCartItem = DBCartItem
+  { id :: Int,
+    dbCartId :: Int,
+    productId :: Int,
+    quantity :: Int
+  }
+  deriving (Generic, Show, ToRow)
+
+instance FromRow DBCartItem where
+  fromRow = do
+    id <- field
+    dbCartId <- field
+    productId <- field
+    quantity <- field
+    pure DBCartItem {..}
+
+type AppM = ReaderT Connection Handler
 
 handlers :: ShoppingCartRoutes (AsServerT AppM)
 handlers =
@@ -44,60 +62,69 @@ handlers =
 
 getCartHandler :: Int -> AppM Cart
 getCartHandler cartId = do
-  mCart <- gets (lookup cartId . carts)
-  case mCart of
-    Just cart -> pure cart
-    Nothing -> throwError err404
+  connection <- ask
+  dbCarts :: [DBCart] <- liftIO . query connection "SELECT * FROM carts WHERE id = ?" $ Only cartId
+
+  case dbCarts of
+    [] -> throwError err404
+    [dbCart] -> do
+      items <- liftIO . query connection "SELECT * FROM cart_items WHERE cart_id = ?" $ Only cartId
+      pure
+        Cart
+          { id = cartId,
+            items = map (\DBCartItem {productId, quantity} -> CartItem {..}) items
+          }
+    _ -> throwError err500
 
 createCartHandler :: CreateCartRequest -> AppM Cart
 createCartHandler (CreateCartRequest items) = do
-  allCarts <- gets carts
-  let nextId = if null allCarts then 1 else maximum (map fst allCarts) + 1
-      newCart = Cart {id = nextId, items = items}
-  modify $ \state@ServerState {carts} ->
-    state {carts = (nextId, newCart) : carts}
-  pure newCart
+  connection <- ask
+  allCarts <- liftIO $ query_ connection "SELECT * FROM carts"
+  let nextId = if null allCarts then 1 else maximum (map (\(DBCart {id}) -> id) allCarts) + 1
+      newCart = DBCart {id = nextId}
+  liftIO $ execute connection "INSERT INTO carts (id) VALUES (?)" newCart
+  pure Cart {id = nextId, items = []}
 
 addItemHandler :: Int -> AddItemRequest -> AppM Cart
 addItemHandler cartId (AddItemRequest prodId qty) = do
-  mCart <- gets (lookup cartId . carts)
-  case mCart of
-    Nothing -> throwError err404
-    Just cart@(Cart {items = cartItems}) -> do
-      let newItem = CartItem {productId = prodId, quantity = qty}
-          updatedCart = (cart :: Cart) {items = newItem : cartItems}
-      modify $ \state@ServerState {carts} ->
-        state
-          { carts =
-              map
-                ( \(cId, c) ->
-                    if cId == cartId
-                      then
-                        (cId, updatedCart)
-                      else (cId, c)
-                )
-                carts
+  connection <- ask
+  dbCarts :: [DBCart] <- liftIO . query connection "SELECT * FROM carts WHERE id = ?" $ Only cartId
+
+  case dbCarts of
+    [] -> throwError err404
+    [dbCart] -> do
+      let newItem = DBCartItem {productId = prodId, quantity = qty}
+      liftIO $ execute connection "INSERT INTO cart_items (cart_id, product_id, quantity) VALUES (?, ?, ?)" (cartId, prodId, qty)
+      items <- liftIO . query connection "SELECT * FROM cart_items WHERE cart_id = ?" $ Only cartId
+      pure
+        Cart
+          { id = cartId,
+            items = map (\DBCartItem {productId, quantity} -> CartItem {..}) items
           }
-      pure updatedCart
+    _ -> throwError err500
 
 removeItemHandler :: Int -> Int -> AppM Cart
 removeItemHandler cartId prodId = do
-  mCart <- gets (lookup cartId . carts)
-  case mCart of
-    Nothing -> throwError err404
-    Just cart@(Cart {items = cartItems}) -> do
-      let updatedItems = filter (\CartItem {productId} -> productId /= prodId) cartItems
-          updatedCart = (cart :: Cart) {items = updatedItems}
-      modify $ \state@ServerState {carts} ->
-        state
-          { carts =
-              map (\(cId, c) -> if cId == cartId then (cId, updatedCart) else (cId, c)) carts
+  connection <- ask
+  dbCarts :: [DBCart] <- liftIO . query connection "SELECT * FROM carts WHERE id = ?" $ Only cartId
+
+  case dbCarts of
+    [] -> throwError err404
+    [dbCart] -> do
+      liftIO . execute connection "DELETE FROM cart_items WHERE cart_id = ?" $ Only cartId
+      items <- liftIO . query connection "SELECT * FROM cart_items WHERE cart_id = ?" $ Only cartId
+      pure
+        Cart
+          { id = cartId,
+            items = map (\DBCartItem {productId, quantity} -> CartItem {..}) items
           }
-      pure updatedCart
+    _ -> throwError err500
 
 initializeDatabase :: Connection -> IO ()
 initializeDatabase conn = do
   execute_ conn "CREATE TABLE products (id INTEGER PRIMARY KEY, name TEXT NOT NULL, price REAL NOT NULL)"
+  execute_ conn "CREATE TABLE carts (id INTEGER PRIMARY KEY)"
+  execute_ conn "CREATE TABLE cart_items (id INTEGER PRIMARY KEY, cart_id INTEGER REFERENCES carts(id), product_id INTEGER, quantity INTEGER)"
   let products :: [(Int, String, Double)]
       products = [(1, "Slim Sleeve", 119.00), (2, "Hide & Seek", 129.00)]
   executeMany
@@ -108,7 +135,6 @@ initializeDatabase conn = do
 main :: IO ()
 main = do
   putStrLn "Starting shopping cart server..."
-  conn <- open ":memory:"
+  conn <- open "test.db"
   initializeDatabase conn
-  let initialState = ServerState {carts = []}
-  runEnv 8080 $ genericServeT (\handler -> runReaderT handler conn `evalStateT` initialState) handlers
+  runEnv 8080 $ genericServeT (`runReaderT` conn) handlers
