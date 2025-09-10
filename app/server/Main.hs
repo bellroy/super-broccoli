@@ -135,6 +135,6 @@ initializeDatabase conn = do
 main :: IO ()
 main = do
   putStrLn "Starting shopping cart server..."
-  conn <- open "test.db"
+  conn <- open ":memory:"
   initializeDatabase conn
   runEnv 8080 $ genericServeT (`runReaderT` conn) handlers
