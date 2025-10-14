@@ -35,6 +35,7 @@
                 pkgs.curl
                 pkgs.jq
                 pkgs.sqlite
+                pkgs.stack
               ];
               shellHook = config.pre-commit.installationScript;
             };
