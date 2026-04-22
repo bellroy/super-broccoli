@@ -1,5 +1,6 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
@@ -24,14 +25,18 @@ import Network.Wai.Handler.Warp (runEnv)
 import Servant (Handler, err404, err500, throwError)
 import Servant.Server.Generic (AsServerT, genericServeT)
 
-instance FromRow Product where
-  fromRow = Product <$> field <*> field <*> field
+newtype DBProduct = DBProduct Product
 
-instance ToRow Product
+instance FromRow DBProduct where
+  fromRow = DBProduct <$> (Product <$> field <*> field <*> field)
+
+instance ToRow DBProduct where
+  toRow (DBProduct (Product pId pName pPrice)) = toRow (pId, pName, pPrice)
 
 newtype DBCart = DBCart
   {id :: Int}
-  deriving (Generic, Show, FromRow, ToRow)
+  deriving stock (Generic, Show)
+  deriving anyclass (FromRow, ToRow)
 
 data DBCartItem = DBCartItem
   { id :: Int,
@@ -43,11 +48,11 @@ data DBCartItem = DBCartItem
 
 instance FromRow DBCartItem where
   fromRow = do
-    id <- field
+    itemId <- field
     dbCartId <- field
     productId <- field
     quantity <- field
-    pure DBCartItem {..}
+    pure DBCartItem {id = itemId, ..}
 
 type AppM = ReaderT Connection Handler
 
@@ -67,7 +72,7 @@ getCartHandler cartId = do
 
   case dbCarts of
     [] -> throwError err404
-    [dbCart] -> do
+    [_] -> do
       items <- liftIO . query connection "SELECT * FROM cart_items WHERE cart_id = ?" $ Only cartId
       pure
         Cart
@@ -80,10 +85,15 @@ createCartHandler :: CreateCartRequest -> AppM Cart
 createCartHandler (CreateCartRequest items) = do
   connection <- ask
   allCarts <- liftIO $ query_ connection "SELECT * FROM carts"
-  let nextId = if null allCarts then 1 else maximum (map (\(DBCart {id}) -> id) allCarts) + 1
+  let nextId = if null allCarts then 1 else maximum (map (\(DBCart {id = cId}) -> cId) allCarts) + 1
       newCart = DBCart {id = nextId}
   liftIO $ execute connection "INSERT INTO carts (id) VALUES (?)" newCart
-  pure Cart {id = nextId, items = []}
+  liftIO $
+    executeMany
+      connection
+      "INSERT INTO cart_items (cart_id, product_id, quantity) VALUES (?, ?, ?)"
+      (map (\CartItem {productId, quantity} -> (nextId, productId, quantity)) items)
+  pure Cart {id = nextId, items = items}
 
 addItemHandler :: Int -> AddItemRequest -> AppM Cart
 addItemHandler cartId (AddItemRequest prodId qty) = do
@@ -92,8 +102,7 @@ addItemHandler cartId (AddItemRequest prodId qty) = do
 
   case dbCarts of
     [] -> throwError err404
-    [dbCart] -> do
-      let newItem = DBCartItem {productId = prodId, quantity = qty}
+    [_] -> do
       liftIO $ execute connection "INSERT INTO cart_items (cart_id, product_id, quantity) VALUES (?, ?, ?)" (cartId, prodId, qty)
       items <- liftIO . query connection "SELECT * FROM cart_items WHERE cart_id = ?" $ Only cartId
       pure
@@ -110,8 +119,8 @@ removeItemHandler cartId prodId = do
 
   case dbCarts of
     [] -> throwError err404
-    [dbCart] -> do
-      liftIO . execute connection "DELETE FROM cart_items WHERE cart_id = ?" $ Only cartId
+    [_] -> do
+      liftIO $ execute connection "DELETE FROM cart_items WHERE cart_id = ? AND product_id = ?" (cartId, prodId)
       items <- liftIO . query connection "SELECT * FROM cart_items WHERE cart_id = ?" $ Only cartId
       pure
         Cart
