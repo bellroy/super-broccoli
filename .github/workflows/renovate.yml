@@ -1,0 +1,31 @@
+name: Renovate
+on:
+  schedule:
+    - cron: 02 */1 * * sun
+  issues:
+    types:
+      - edited
+  push:
+    branches:
+      - master
+    paths:
+      - .github/renovate.json
+  pull_request:
+    branches:
+      - master
+    types:
+      - edited
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: true
+
+jobs:
+  renovate:
+    name: Renovate
+    if: github.actor != 'bellroy-renovate-bot[bot]'
+    uses: bellroy/actions/.github/workflows/renovate.yaml@renovate-v1
+    secrets: inherit
+    with:
+      renovate-app-client-id: ${{ vars.RENOVATE_APP_CLIENT_ID }}
