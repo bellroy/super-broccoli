@@ -39,7 +39,7 @@ library api
   import:           warnings
   exposed-modules:  Api
   build-depends:
-    , aeson    ^>=2.2.3
+    , aeson    ^>=2.2.4
     , base     ^>=4.19.2.0 || ^>=4.20.0.0 || ^>=4.21.0.0 || ^>=4.22.0.0
     , servant  ^>=0.20.2
 
