@@ -45,7 +45,7 @@
             ormolu.enable = true;
             cabal-fmt.enable = true;
             hlint.enable = true;
-            nixfmt-rfc-style.enable = true;
+            nixfmt.enable = true;
             prettier = {
               enable = true;
               excludes = [ "flake.lock" ];
