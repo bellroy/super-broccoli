@@ -1,56 +1,56 @@
-cabal-version:   3.0
-name:            tech-team-haskell-trial
-version:         0.1.0.0
+cabal-version: 3.0
+name: tech-team-haskell-trial
+version: 0.1.0.0
 license:
-author:          Jack Kelly
-maintainer:      haskell@bellroy.com
-copyright:       Copyright (C) 2025 Bellroy Pty Ltd
-category:        Demo
-build-type:      Simple
+author: Jack Kelly
+maintainer: haskell@bellroy.com
+copyright: Copyright (C) 2025 Bellroy Pty Ltd
+category: Demo
+build-type: Simple
 extra-doc-files: CHANGELOG.md
 
 common warnings
   ghc-options: -Wall
 
 executable client
-  import:           warnings
-  main-is:          Main.hs
+  import: warnings
+  main-is: Main.hs
   build-depends:
     base ^>=4.19.2.0 || ^>=4.20.0.0 || ^>=4.21.0.0 || ^>=4.22.0.0
 
-  hs-source-dirs:   app/client
+  hs-source-dirs: app/client
   default-language: GHC2021
 
 executable server
-  import:           warnings
-  main-is:          Main.hs
+  import: warnings
+  main-is: Main.hs
   build-depends:
-    , api
-    , base            ^>=4.19.2.0 || ^>=4.20.0.0 || ^>=4.21.0.0 || ^>=4.22.0.0
-    , mtl             ^>=2.3.1
-    , servant-server  ^>=0.20.2
-    , sqlite-simple   ^>=0.4.19
-    , warp            ^>=3.4.7
+    api,
+    base ^>=4.19.2.0 || ^>=4.20.0.0 || ^>=4.21.0.0 || ^>=4.22.0.0,
+    mtl ^>=2.3.1,
+    servant-server ^>=0.20.2,
+    sqlite-simple ^>=0.4.19,
+    warp ^>=3.4.7,
 
-  hs-source-dirs:   app/server
+  hs-source-dirs: app/server
   default-language: GHC2021
 
 library api
-  import:           warnings
-  exposed-modules:  Api
+  import: warnings
+  exposed-modules: Api
   build-depends:
-    , aeson    ^>=2.2.4
-    , base     ^>=4.19.2.0 || ^>=4.20.0.0 || ^>=4.21.0.0 || ^>=4.22.0.0
-    , servant  ^>=0.20.2
+    aeson ^>=2.2.4 || ^>=2.3,
+    base ^>=4.19.2.0 || ^>=4.20.0.0 || ^>=4.21.0.0 || ^>=4.22.0.0,
+    servant ^>=0.20.2,
 
-  hs-source-dirs:   src/api
+  hs-source-dirs: src/api
   default-language: GHC2021
 
 test-suite tech-team-haskell-trial-test
-  import:           warnings
+  import: warnings
   default-language: GHC2021
-  type:             exitcode-stdio-1.0
-  hs-source-dirs:   test
-  main-is:          Main.hs
+  type: exitcode-stdio-1.0
+  hs-source-dirs: test
+  main-is: Main.hs
   build-depends:
     base ^>=4.19.2.0 || ^>=4.20.0.0 || ^>=4.21.0.0 || ^>=4.22.0.0
