@@ -43,7 +43,7 @@
 
           pre-commit.settings.hooks = {
             ormolu.enable = true;
-            cabal-fmt.enable = true;
+            cabal-gild.enable = true;
             hlint.enable = true;
             nixfmt.enable = true;
             prettier = {
