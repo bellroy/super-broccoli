@@ -43,9 +43,9 @@
 
           pre-commit.settings.hooks = {
             ormolu.enable = true;
-            cabal-fmt.enable = true;
+            cabal-gild.enable = true;
             hlint.enable = true;
-            nixfmt-rfc-style.enable = true;
+            nixfmt.enable = true;
             prettier = {
               enable = true;
               excludes = [ "flake.lock" ];
