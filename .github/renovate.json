@@ -1,8 +1,13 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": ["config:recommended"],
-  "enabledManagers": ["custom.regex", "nix"],
-  "includePaths": ["*.cabal", "flake.nix", "flake.lock"],
+  "nix": {
+    "enabled": true,
+    "lockFileMaintenance": {
+      "enabled": true,
+      "schedule": ["on sunday"]
+    }
+  },
   "customManagers": [
     {
       "customType": "regex",
@@ -15,13 +20,6 @@
       "versioningTemplate": "loose"
     }
   ],
-  "nix": {
-    "enabled": true
-  },
-  "lockFileMaintenance": {
-    "enabled": true,
-    "schedule": ["* * * * 0"]
-  },
   "minimumReleaseAge": "7 days",
   "packageRules": [
     {
@@ -46,11 +44,7 @@
     },
     {
       "matchManagers": ["nix"],
-      "groupName": "nix and lockfiles"
-    },
-    {
-      "matchUpdateTypes": ["lockFileMaintenance"],
-      "groupName": "nix and lockfiles"
+      "groupName": "nix"
     }
   ]
 }
